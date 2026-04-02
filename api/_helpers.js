@@ -3,6 +3,11 @@
  */
 
 const TOKEN = process.env.HUBSPOT_TOKEN;
+const MARKETING_SUBSCRIPTION_ID = process.env.HUBSPOT_MARKETING_SUBSCRIPTION_ID;
+const MARKETING_LEGAL_BASIS = process.env.HUBSPOT_MARKETING_LEGAL_BASIS || 'CONSENT_WITH_NOTICE';
+const MARKETING_LEGAL_BASIS_EXPLANATION =
+  process.env.HUBSPOT_MARKETING_LEGAL_BASIS_EXPLANATION ||
+  'Contact gaf expliciete toestemming via het Twain onboardingformulier.';
 
 // ── HubSpot helpers ───────────────────────────────────────────
 
@@ -37,6 +42,25 @@ async function updateContact(contactId, props) {
     headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ properties: props }),
   });
+  return await resp.json();
+}
+
+async function subscribeContactToMarketing(email) {
+  if (!email || !MARKETING_SUBSCRIPTION_ID) {
+    return { skipped: true, reason: 'missing_email_or_subscription_id' };
+  }
+
+  const resp = await fetch('https://api.hubapi.com/communication-preferences/v3/subscribe', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      emailAddress: email,
+      subscriptionId: String(MARKETING_SUBSCRIPTION_ID),
+      legalBasis: MARKETING_LEGAL_BASIS,
+      legalBasisExplanation: MARKETING_LEGAL_BASIS_EXPLANATION,
+    }),
+  });
+
   return await resp.json();
 }
 
@@ -94,6 +118,6 @@ function setCorsHeaders(req, res) {
 }
 
 module.exports = {
-  TOKEN, findContact, createContact, updateContact,
+  TOKEN, MARKETING_SUBSCRIPTION_ID, findContact, createContact, updateContact, subscribeContactToMarketing,
   STAP_DEEL, TOTAAL_ECHTE_STAPPEN, berekenStatus, toHubSpotDate, setCorsHeaders,
 };
