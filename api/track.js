@@ -14,7 +14,7 @@
  */
 
 const {
-  TOKEN, findContact, createContact, updateContact, subscribeContactToMarketing,
+  TOKEN, findContact, createContact, updateContact, submitMarketingConsentForm,
   STAP_DEEL, TOTAAL_ECHTE_STAPPEN, berekenStatus, toHubSpotDate, setCorsHeaders,
 } = require('./_helpers');
 
@@ -94,12 +94,18 @@ module.exports = async function handler(req, res) {
 
     if (consentMarketing) {
       try {
-        const subscribeResult = await subscribeContactToMarketing(email, subscriptionTypeId);
-        if (subscribeResult?.skipped) {
-          console.warn('[track] marketing subscribe overgeslagen:', subscribeResult);
+        const formSubmitResult = await submitMarketingConsentForm({
+          email,
+          firstName: voornaam,
+          lastName: naam,
+          phone: tel,
+          subscriptionTypeId,
+        });
+        if (formSubmitResult?.skipped) {
+          console.warn('[track] marketing consent form overgeslagen:', formSubmitResult);
         }
-      } catch (subscribeErr) {
-        console.error('[track] marketing subscribe fout:', subscribeErr);
+      } catch (marketingErr) {
+        console.error('[track] marketing consent sync fout:', marketingErr);
       }
     }
 

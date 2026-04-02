@@ -5,10 +5,18 @@
 const TOKEN = process.env.HUBSPOT_TOKEN;
 const MARKETING_SUBSCRIPTION_ID = process.env.HUBSPOT_MARKETING_SUBSCRIPTION_ID;
 const DEFAULT_MARKETING_SUBSCRIPTION_ID = '1507764305';
+const MARKETING_FORM_PORTAL_ID = process.env.HUBSPOT_MARKETING_FORM_PORTAL_ID || '147164295';
+const MARKETING_FORM_GUID =
+  process.env.HUBSPOT_MARKETING_FORM_GUID || 'e08a2761-2f1b-4b33-a10e-c2af6ea8c181';
 const MARKETING_LEGAL_BASIS = process.env.HUBSPOT_MARKETING_LEGAL_BASIS || 'CONSENT_WITH_NOTICE';
 const MARKETING_LEGAL_BASIS_EXPLANATION =
   process.env.HUBSPOT_MARKETING_LEGAL_BASIS_EXPLANATION ||
   'Contact gaf expliciete toestemming via het Twain onboardingformulier.';
+const MARKETING_PROCESSING_TEXT =
+  process.env.HUBSPOT_MARKETING_PROCESSING_TEXT || 'Toestemming voor verwerking door Twain.';
+const MARKETING_COMMUNICATIONS_TEXT =
+  process.env.HUBSPOT_MARKETING_COMMUNICATIONS_TEXT ||
+  'Ik ga akkoord met het ontvangen van e-mails van Twain Vermogensbeheer.';
 
 // ── HubSpot helpers ───────────────────────────────────────────
 
@@ -68,6 +76,64 @@ async function subscribeContactToMarketing(email, subscriptionTypeId) {
   return await resp.json();
 }
 
+async function submitMarketingConsentForm({ email, firstName, lastName, phone, subscriptionTypeId }) {
+  if (!email) {
+    return { skipped: true, reason: 'missing_email' };
+  }
+
+  const resolvedSubscriptionId =
+    subscriptionTypeId || MARKETING_SUBSCRIPTION_ID || DEFAULT_MARKETING_SUBSCRIPTION_ID;
+  const fields = [
+    { objectTypeId: '0-1', name: 'firstname', value: firstName || '' },
+    { objectTypeId: '0-1', name: 'lastname', value: lastName || '' },
+    { objectTypeId: '0-1', name: 'email', value: email },
+    { objectTypeId: '0-1', name: 'twain_taal', value: 'nl' },
+  ];
+
+  if (phone) {
+    fields.push({ objectTypeId: '0-1', name: 'phone', value: phone });
+  }
+
+  const resp = await fetch(
+    `https://api.hsforms.com/submissions/v3/integration/submit/${MARKETING_FORM_PORTAL_ID}/${MARKETING_FORM_GUID}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fields,
+        context: {
+          pageUri: 'https://www.twain.eu/',
+          pageName: 'Twain onboarding',
+        },
+        legalConsentOptions: {
+          consent: {
+            consentToProcess: true,
+            text: MARKETING_PROCESSING_TEXT,
+            communications: [
+              {
+                value: true,
+                subscriptionTypeId: Number(resolvedSubscriptionId),
+                text: MARKETING_COMMUNICATIONS_TEXT,
+              },
+            ],
+          },
+        },
+      }),
+    }
+  );
+
+  const responseText = await resp.text();
+  if (!resp.ok) {
+    throw new Error(`HubSpot forms submit ${resp.status}: ${responseText}`);
+  }
+
+  try {
+    return responseText ? JSON.parse(responseText) : { ok: true };
+  } catch {
+    return { ok: true, raw: responseText };
+  }
+}
+
 // ── Stap → deel mapping ───────────────────────────────────────
 
 const STAP_DEEL = {
@@ -123,6 +189,6 @@ function setCorsHeaders(req, res) {
 
 module.exports = {
   TOKEN, MARKETING_SUBSCRIPTION_ID, DEFAULT_MARKETING_SUBSCRIPTION_ID,
-  findContact, createContact, updateContact, subscribeContactToMarketing,
+  findContact, createContact, updateContact, subscribeContactToMarketing, submitMarketingConsentForm,
   STAP_DEEL, TOTAAL_ECHTE_STAPPEN, berekenStatus, toHubSpotDate, setCorsHeaders,
 };
