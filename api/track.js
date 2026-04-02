@@ -53,6 +53,11 @@ module.exports = async function handler(req, res) {
       onboarding_voortgang_pct:       String(pct),
     };
 
+    // Houd de contactgegevens synchroon met de laatst ingevulde waarden.
+    if (voornaam) props.firstname = voornaam;
+    if (naam)     props.lastname  = naam;
+    if (tel)      props.phone     = tel;
+
     // Sla antwoorden op voor resume (enkel als er inhoud is)
     if (antwoorden && Object.keys(antwoorden).length > 0) {
       // HubSpot textarea-properties hebben een limiet van ~65.000 tekens
