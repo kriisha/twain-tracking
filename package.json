@@ -1,0 +1,10 @@
+{
+  "name": "twain-tracking-api",
+  "version": "1.0.0",
+  "description": "Twain onboarding tracking API voor HubSpot",
+  "private": true,
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
