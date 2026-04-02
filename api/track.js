@@ -18,7 +18,7 @@ const {
   STAP_DEEL, TOTAAL_ECHTE_STAPPEN, berekenStatus, toHubSpotDate, setCorsHeaders,
 } = require('./_helpers');
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   setCorsHeaders(req, res);
 
   // Vercel stuurt preflight OPTIONS-verzoeken — meteen beantwoorden
