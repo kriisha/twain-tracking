@@ -82,12 +82,15 @@ const ALLOWED_ORIGINS = [
 
 function setCorsHeaders(req, res) {
   const origin = req.headers.origin || '';
-  const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o));
-  if (allowed || !origin) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  if (!origin || origin === 'null') {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else {
+    const allowed = ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o));
+    res.setHeader('Access-Control-Allow-Origin', allowed ? origin : '');
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400');
 }
 
 module.exports = {
