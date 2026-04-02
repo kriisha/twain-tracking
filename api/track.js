@@ -14,7 +14,7 @@
  */
 
 const {
-  TOKEN, MARKETING_SUBSCRIPTION_ID, findContact, createContact, updateContact, subscribeContactToMarketing,
+  TOKEN, findContact, createContact, updateContact, subscribeContactToMarketing,
   STAP_DEEL, TOTAAL_ECHTE_STAPPEN, berekenStatus, toHubSpotDate, setCorsHeaders,
 } = require('./_helpers');
 
@@ -29,7 +29,7 @@ module.exports = async function handler(req, res) {
   try {
     const {
       email, voornaam, naam, tel,
-      event, stapId, stapLabel, stapIndex, sectie, antwoorden, consentMarketing,
+      event, stapId, stapLabel, stapIndex, sectie, antwoorden, consentMarketing, subscriptionTypeId,
     } = req.body;
 
     if (!email) return res.status(400).json({ error: 'email is verplicht' });
@@ -92,9 +92,12 @@ module.exports = async function handler(req, res) {
       await updateContact(contactId, props);
     }
 
-    if (consentMarketing && MARKETING_SUBSCRIPTION_ID) {
+    if (consentMarketing) {
       try {
-        await subscribeContactToMarketing(email);
+        const subscribeResult = await subscribeContactToMarketing(email, subscriptionTypeId);
+        if (subscribeResult?.skipped) {
+          console.warn('[track] marketing subscribe overgeslagen:', subscribeResult);
+        }
       } catch (subscribeErr) {
         console.error('[track] marketing subscribe fout:', subscribeErr);
       }
