@@ -29,7 +29,8 @@ module.exports = async function handler(req, res) {
   try {
     const {
       email, voornaam, naam, tel,
-      event, stapId, stapLabel, stapIndex, sectie, antwoorden, consentMarketing, subscriptionTypeId,
+      event, stapId, stapLabel, stapIndex, voortgangIndex, totaalEchteStappen,
+      sectie, antwoorden, consentMarketing, subscriptionTypeId,
     } = req.body;
 
     if (!email) return res.status(400).json({ error: 'email is verplicht' });
@@ -38,7 +39,9 @@ module.exports = async function handler(req, res) {
     const isVoltooid = event === 'completed';
     const isExit     = event === 'exit';
     const status     = berekenStatus(stapId, isVoltooid, isExit);
-    const pct        = Math.min(Math.round(((stapIndex || 0) / TOTAAL_ECHTE_STAPPEN) * 100), 100);
+    const progressIndex = Number(voortgangIndex ?? stapIndex ?? 0);
+    const totaalStappen = Number(totaalEchteStappen || TOTAAL_ECHTE_STAPPEN) || TOTAAL_ECHTE_STAPPEN;
+    const pct        = Math.min(Math.round((progressIndex / Math.max(totaalStappen, 1)) * 100), 100);
     const now        = new Date().toISOString();
     const nowMs      = toHubSpotDate(now);
 
